@@ -18,10 +18,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Bagh-Chal',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.nebulaTeal),
         scaffoldBackgroundColor: AppColors.deepSpace,
+        textTheme: Theme.of(context).textTheme.apply(bodyColor: Colors.white, displayColor: Colors.white),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: Colors.white, elevation: 0),
         useMaterial3: true,
       ),
       home: const MenuScreen(),
@@ -46,53 +49,58 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Bagh-Chal')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionTitle('Mode'),
-            Wrap(spacing: 8, children: [
-              _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
-              _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Side'),
-            Wrap(spacing: 8, children: [
-              _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
-              _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Difficulty'),
-            Wrap(spacing: 8, children: [
-              _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
-              _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
-              _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Board'),
-            Wrap(spacing: 8, children: [
-              _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
-              _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
-            ]),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => GameScreen(
-                      boardType: board,
-                      mode: mode,
-                      side: side,
-                      difficulty: difficulty,
-                    ),
-                  ));
-                },
-                child: const Text('Start Game'),
-              ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _sectionTitle('Mode'),
+                Wrap(spacing: 8, children: [
+                  _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
+                  _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
+                ]),
+                const SizedBox(height: 12),
+                _sectionTitle('Side'),
+                Wrap(spacing: 8, children: [
+                  _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
+                  _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
+                ]),
+                const SizedBox(height: 12),
+                _sectionTitle('Difficulty'),
+                Wrap(spacing: 8, children: [
+                  _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
+                  _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
+                  _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
+                ]),
+                const SizedBox(height: 12),
+                _sectionTitle('Board'),
+                Wrap(spacing: 8, children: [
+                  _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
+                  _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
+                ]),
+                const Spacer(),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => GameScreen(
+                          boardType: board,
+                          mode: mode,
+                          side: side,
+                          difficulty: difficulty,
+                        ),
+                      ));
+                    },
+                    child: const Text('Start Game'),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -178,55 +186,42 @@ class _GameScreenState extends State<GameScreen> {
         }
       }
       Offset pos(Point p) => Offset((p.x) / 4, (p.y) / 4);
-      return BoardView(points: points, connections: connections, positionOf: pos);
+      return BoardView(
+        points: points,
+        connections: connections,
+        positionOf: pos,
+        selected: _selected,
+        highlightTargets: _selected == null ? {} : controller.validMoves(_selected!).toSet(),
+        onTapPoint: _onTapPoint,
+      );
     } else {
       final config = controller.ampulBoard ?? AmpulBoardFactory.create();
       Offset pos(Point p) => p.position ?? const Offset(0.5, 0.5);
-      return GestureDetector(
-        onTapUp: (d) {
-          _handleTap(d.localPosition, context.size);
-        },
-        child: BoardView(points: config.nodes, connections: config.connections, positionOf: pos),
+      return BoardView(
+        points: config.nodes,
+        connections: config.connections,
+        positionOf: pos,
+        selected: _selected,
+        highlightTargets: _selected == null ? {} : controller.validMoves(_selected!).toSet(),
+        onTapPoint: _onTapPoint,
       );
     }
   }
 
-  void _handleTap(Offset local, Size? size) {
-    size ??= const Size(1, 1);
-    // hit test nearest node within radius
-    final points = widget.boardType == BoardType.square
-        ? controller.squareBoard!.expand((e) => e)
-        : controller.ampulBoard!.nodes;
-    Point? nearest;
-    double best = 1e9;
-    for (final p in points) {
-      final pos = widget.boardType == BoardType.square ? Offset(p.x / 4, p.y / 4) : (p.position ?? const Offset(0.5, 0.5));
-      final center = Offset(pos.dx * size.width, pos.dy * size.height);
-      final d = (center - local).distance;
-      if (d < best) {
-        best = d;
-        nearest = p;
-      }
-    }
-    if (nearest == null) return;
-    if (best > 28) return; // tap threshold
-
-    // Placement if it's goat turn and still placing
+  void _onTapPoint(Point tapped) {
     if (controller.currentTurn == PieceType.goat && controller.isGoatPlacementPhase) {
-      final placed = controller.placeGoat(nearest);
+      final placed = controller.placeGoat(tapped);
       if (placed) _maybeAiTurn();
       return;
     }
-    // Otherwise, attempt to move: first tap selects; second tap moves
     setState(() {
-      _selected ??= null;
       if (_selected == null) {
-        if (nearest!.type == controller.currentTurn) {
-          _selected = nearest;
+        if (tapped.type == controller.currentTurn) {
+          _selected = tapped;
         }
       } else {
         final from = _selected!;
-        final ok = controller.move(from, nearest!);
+        final ok = controller.move(from, tapped);
         _selected = null;
         if (ok) _maybeAiTurn();
       }

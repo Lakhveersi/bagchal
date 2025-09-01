@@ -4,34 +4,61 @@ import '../models/board_config.dart';
 import '../models/piece.dart';
 
 class BoardView extends StatelessWidget {
-  const BoardView({super.key, required this.points, required this.connections, required this.positionOf, this.selected, this.highlightTargets = const {}});
+  const BoardView({super.key, required this.points, required this.connections, required this.positionOf, this.selected, this.highlightTargets = const {}, this.onTapPoint});
 
   final Iterable<Point> points;
   final List<Connection> connections;
   final Offset Function(Point) positionOf; // normalized 0..1
   final Point? selected;
   final Set<Point> highlightTargets;
+  final ValueChanged<Point>? onTapPoint;
 
   @override
   Widget build(BuildContext context) {
+    final pts = points.toList(growable: false);
     return AspectRatio(
       aspectRatio: 1,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final size = constraints.biggest.shortestSide;
-          return CustomPaint(
-            size: Size.square(size),
-            painter: _BoardPainter(
-              points: points,
-              connections: connections,
-              positionOf: positionOf,
-              selected: selected,
-              highlightTargets: highlightTargets,
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (details) {
+              if (onTapPoint == null) return;
+              final tapped = _hitTestPoint(details.localPosition, Size.square(size), pts);
+              if (tapped != null) onTapPoint!(tapped);
+            },
+            child: CustomPaint(
+              size: Size.square(size),
+              painter: _BoardPainter(
+                points: pts,
+                connections: connections,
+                positionOf: positionOf,
+                selected: selected,
+                highlightTargets: highlightTargets,
+              ),
             ),
           );
         },
       ),
     );
+  }
+
+  Point? _hitTestPoint(Offset local, Size size, List<Point> pts) {
+    Point? nearest;
+    double best = double.infinity;
+    for (final p in pts) {
+      final pos = positionOf(p);
+      final center = Offset(pos.dx * size.width, pos.dy * size.height);
+      final d = (center - local).distance;
+      if (d < best) {
+        best = d;
+        nearest = p;
+      }
+    }
+    final threshold = size.shortestSide * 0.06; // ~6% of board size
+    if (best <= threshold) return nearest;
+    return null;
   }
 }
 
@@ -70,7 +97,7 @@ class _BoardPainter extends CustomPainter {
       canvas.drawLine(o1, o2, linePaint);
     }
 
-    const double nodeRadius = 10;
+    final double nodeRadius = size.shortestSide * 0.022 + 8; // responsive sizing
     for (final p in points) {
       final pos = positionOf(p);
       final center = Offset(pos.dx * size.width, pos.dy * size.height);
