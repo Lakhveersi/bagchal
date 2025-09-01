@@ -178,15 +178,30 @@ class _GameScreenState extends State<GameScreen> {
         }
       }
       Offset pos(Point p) => Offset((p.x) / 4, (p.y) / 4);
-      return BoardView(points: points, connections: connections, positionOf: pos);
+      final highlights = _selected == null
+          ? <Point>{}
+          : controller.validMoves(_selected!).toSet();
+      return BoardView(
+        points: points,
+        connections: connections,
+        positionOf: pos,
+        selected: _selected,
+        highlightTargets: highlights,
+        onTapUp: _handleTap,
+      );
     } else {
       final config = controller.ampulBoard ?? AmpulBoardFactory.create();
       Offset pos(Point p) => p.position ?? const Offset(0.5, 0.5);
-      return GestureDetector(
-        onTapUp: (d) {
-          _handleTap(d.localPosition, context.size);
-        },
-        child: BoardView(points: config.nodes, connections: config.connections, positionOf: pos),
+      final highlights = _selected == null
+          ? <Point>{}
+          : controller.validMoves(_selected!).toSet();
+      return BoardView(
+        points: config.nodes,
+        connections: config.connections,
+        positionOf: pos,
+        selected: _selected,
+        highlightTargets: highlights,
+        onTapUp: _handleTap,
       );
     }
   }

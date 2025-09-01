@@ -4,13 +4,22 @@ import '../models/board_config.dart';
 import '../models/piece.dart';
 
 class BoardView extends StatelessWidget {
-  const BoardView({super.key, required this.points, required this.connections, required this.positionOf, this.selected, this.highlightTargets = const {}});
+  const BoardView({
+    super.key,
+    required this.points,
+    required this.connections,
+    required this.positionOf,
+    this.selected,
+    this.highlightTargets = const {},
+    this.onTapUp,
+  });
 
   final Iterable<Point> points;
   final List<Connection> connections;
   final Offset Function(Point) positionOf; // normalized 0..1
   final Point? selected;
   final Set<Point> highlightTargets;
+  final void Function(Offset localPosition, Size size)? onTapUp;
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +28,21 @@ class BoardView extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final size = constraints.biggest.shortestSide;
-          return CustomPaint(
-            size: Size.square(size),
-            painter: _BoardPainter(
-              points: points,
-              connections: connections,
-              positionOf: positionOf,
-              selected: selected,
-              highlightTargets: highlightTargets,
+          final boardSize = Size.square(size);
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: onTapUp == null
+                ? null
+                : (details) => onTapUp!(details.localPosition, boardSize),
+            child: CustomPaint(
+              size: boardSize,
+              painter: _BoardPainter(
+                points: points,
+                connections: connections,
+                positionOf: positionOf,
+                selected: selected,
+                highlightTargets: highlightTargets,
+              ),
             ),
           );
         },
