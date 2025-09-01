@@ -44,55 +44,92 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Bagh-Chal')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionTitle('Mode'),
-            Wrap(spacing: 8, children: [
-              _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
-              _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Side'),
-            Wrap(spacing: 8, children: [
-              _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
-              _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Difficulty'),
-            Wrap(spacing: 8, children: [
-              _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
-              _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
-              _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
-            ]),
-            const SizedBox(height: 12),
-            _sectionTitle('Board'),
-            Wrap(spacing: 8, children: [
-              _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
-              _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
-            ]),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => GameScreen(
-                      boardType: board,
-                      mode: mode,
-                      side: side,
-                      difficulty: difficulty,
-                    ),
-                  ));
-                },
-                child: const Text('Start Game'),
+    return Container(
+      decoration: const BoxDecoration(gradient: AppGradients.space),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text('Bagh-Chal', style: AppTextStyles.title(context)),
+          centerTitle: true,
+        ),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 900;
+            final content = <Widget>[
+              Expanded(
+                flex: isWide ? 1 : 0,
+                child: Container(
+                  decoration: AppDecorations.panel,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Mode', style: AppTextStyles.subtitle(context)),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
+                        _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
+                      ]),
+                      const SizedBox(height: 16),
+                      Text('Side', style: AppTextStyles.subtitle(context)),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
+                        _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
+                      ]),
+                      const SizedBox(height: 16),
+                      Text('Difficulty', style: AppTextStyles.subtitle(context)),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
+                        _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
+                        _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
+                      ]),
+                      const SizedBox(height: 16),
+                      Text('Board', style: AppTextStyles.subtitle(context)),
+                      const SizedBox(height: 8),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
+                        _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
+                      ]),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.stellarGold,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => GameScreen(
+                                boardType: board,
+                                mode: mode,
+                                side: side,
+                                difficulty: difficulty,
+                              ),
+                            ));
+                          },
+                          child: const Text('Start Game'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+            ];
+
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: isWide
+                  ? Row(children: content)
+                  : SingleChildScrollView(child: Column(children: content)),
+            );
+          },
         ),
       ),
     );
@@ -143,20 +180,63 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.boardType == BoardType.square ? 'Square' : 'Ampul'} • ${controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger'} Turn'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: _buildBoard(),
-            ),
-            const SizedBox(height: 12),
-            Text('Goats placed: ${controller.goatsPlaced}  •  Captured: ${controller.goatsCaptured}')
-          ],
+    return Container(
+      decoration: const BoxDecoration(gradient: AppGradients.jungle),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            '${widget.boardType == BoardType.square ? 'Square' : 'Ampul'} • ${controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger'} Turn',
+            style: AppTextStyles.title(context),
+          ),
+          centerTitle: true,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 900;
+              final boardWidget = Container(
+                decoration: AppDecorations.board,
+                padding: const EdgeInsets.all(12),
+                child: _buildBoard(),
+              );
+              final infoPanel = Container(
+                decoration: AppDecorations.panel,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Stats', style: AppTextStyles.subtitle(context)),
+                    const SizedBox(height: 8),
+                    _statBadge(context, 'Placed', controller.goatsPlaced.toString()),
+                    const SizedBox(height: 8),
+                    _statBadge(context, 'Captured', controller.goatsCaptured.toString()),
+                    const SizedBox(height: 8),
+                    _statBadge(context, 'Turn', controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger'),
+                  ],
+                ),
+              );
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(flex: 3, child: boardWidget),
+                    const SizedBox(width: 16),
+                    Expanded(flex: 1, child: infoPanel),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  Expanded(child: boardWidget),
+                  const SizedBox(height: 16),
+                  infoPanel,
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -229,7 +309,10 @@ class _GameScreenState extends State<GameScreen> {
     // Placement if it's goat turn and still placing
     if (controller.currentTurn == PieceType.goat && controller.isGoatPlacementPhase) {
       final placed = controller.placeGoat(nearest);
-      if (placed) _maybeAiTurn();
+      if (placed) {
+        _maybeAiTurn();
+        _maybeShowWin();
+      }
       return;
     }
     // Otherwise, attempt to move: first tap selects; second tap moves
@@ -243,7 +326,10 @@ class _GameScreenState extends State<GameScreen> {
         final from = _selected!;
         final ok = controller.move(from, nearest!);
         _selected = null;
-        if (ok) _maybeAiTurn();
+        if (ok) {
+          _maybeAiTurn();
+          _maybeShowWin();
+        }
       }
     });
   }
@@ -252,5 +338,57 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _maybeAiTurn() async {
     await ai?.maybePlayAiTurnIfNeeded(mode: widget.mode, side: widget.side, difficulty: widget.difficulty);
+  }
+
+  void _maybeShowWin() {
+    if (controller.isTigerWin || controller.isGoatWin) {
+      final message = controller.isTigerWin ? 'Tigers Win!' : 'Goats Win!';
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          backgroundColor: AppColors.cosmicBlue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Colors.white24),
+          ),
+          title: Text('Game Over', style: AppTextStyles.title(context)),
+          content: Text(message, style: AppTextStyles.subtitle(context)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).popUntil((r) => r.isFirst);
+              },
+              child: const Text('Main Menu'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                controller.reset();
+                Navigator.of(context).pop();
+              },
+              child: const Text('New Game'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _statBadge(BuildContext context, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black26,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label: ', style: AppTextStyles.body(context).copyWith(color: Colors.white70)),
+          Text(value, style: AppTextStyles.badge(context)),
+        ],
+      ),
+    );
   }
 }
