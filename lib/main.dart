@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'constants.dart';
+import 'controllers/game_controller.dart';
+import 'controllers/ai_controller.dart';
+import 'models/ampul_board_config.dart';
+import 'models/board_config.dart';
+import 'models/piece.dart';
+import 'widgets/board_view.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,112 +18,224 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Bagh-Chal',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.nebulaTeal),
+        scaffoldBackgroundColor: AppColors.deepSpace,
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MenuScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MenuScreen extends StatefulWidget {
+  const MenuScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MenuScreen> createState() => _MenuScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _MenuScreenState extends State<MenuScreen> {
+  String mode = 'PVC';
+  String side = 'Goat';
+  Difficulty difficulty = Difficulty.medium;
+  BoardType board = BoardType.square;
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: const Text('Bagh-Chal')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('Mode'),
+            Wrap(spacing: 8, children: [
+              _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
+              _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
+            ]),
+            const SizedBox(height: 12),
+            _sectionTitle('Side'),
+            Wrap(spacing: 8, children: [
+              _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
+              _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
+            ]),
+            const SizedBox(height: 12),
+            _sectionTitle('Difficulty'),
+            Wrap(spacing: 8, children: [
+              _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
+              _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
+              _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
+            ]),
+            const SizedBox(height: 12),
+            _sectionTitle('Board'),
+            Wrap(spacing: 8, children: [
+              _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
+              _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
+            ]),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => GameScreen(
+                      boardType: board,
+                      mode: mode,
+                      side: side,
+                      difficulty: difficulty,
+                    ),
+                  ));
+                },
+                child: const Text('Start Game'),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  Widget _sectionTitle(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      );
+
+  Widget _chip(String label, bool selected, VoidCallback onSelected) => ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onSelected(),
+      );
+}
+
+class GameScreen extends StatefulWidget {
+  const GameScreen({super.key, required this.boardType, required this.mode, required this.side, required this.difficulty});
+
+  final BoardType boardType;
+  final String mode; // PVC or PVP
+  final String side; // Goat or Tiger
+  final Difficulty difficulty;
+
+  @override
+  State<GameScreen> createState() => _GameScreenState();
+}
+
+class _GameScreenState extends State<GameScreen> {
+  late GameController controller;
+  AiController? ai;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = GameController(boardType: widget.boardType);
+    controller.addListener(() => setState(() {}));
+    ai = AiController(controller);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAiTurn());
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.boardType == BoardType.square ? 'Square' : 'Ampul'} • ${controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger'} Turn'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(
+              child: _buildBoard(),
+            ),
+            const SizedBox(height: 12),
+            Text('Goats placed: ${controller.goatsPlaced}  •  Captured: ${controller.goatsCaptured}')
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoard() {
+    if (widget.boardType == BoardType.square) {
+      final board = controller.squareBoard!;
+      final points = board.expand((e) => e);
+      final connections = <Connection>[];
+      final had = <String>{};
+      for (final p in points) {
+        for (final q in p.adjacentPoints) {
+          final key = '${p.hashCode}-${q.hashCode}';
+          final rkey = '${q.hashCode}-${p.hashCode}';
+          if (had.contains(key) || had.contains(rkey)) continue;
+          had.add(key);
+          connections.add(Connection(p, q));
+        }
+      }
+      Offset pos(Point p) => Offset((p.x) / 4, (p.y) / 4);
+      return BoardView(points: points, connections: connections, positionOf: pos);
+    } else {
+      final config = controller.ampulBoard ?? AmpulBoardFactory.create();
+      Offset pos(Point p) => p.position ?? const Offset(0.5, 0.5);
+      return GestureDetector(
+        onTapUp: (d) {
+          _handleTap(d.localPosition, context.size);
+        },
+        child: BoardView(points: config.nodes, connections: config.connections, positionOf: pos),
+      );
+    }
+  }
+
+  void _handleTap(Offset local, Size? size) {
+    size ??= const Size(1, 1);
+    // hit test nearest node within radius
+    final points = widget.boardType == BoardType.square
+        ? controller.squareBoard!.expand((e) => e)
+        : controller.ampulBoard!.nodes;
+    Point? nearest;
+    double best = 1e9;
+    for (final p in points) {
+      final pos = widget.boardType == BoardType.square ? Offset(p.x / 4, p.y / 4) : (p.position ?? const Offset(0.5, 0.5));
+      final center = Offset(pos.dx * size.width, pos.dy * size.height);
+      final d = (center - local).distance;
+      if (d < best) {
+        best = d;
+        nearest = p;
+      }
+    }
+    if (nearest == null) return;
+    if (best > 28) return; // tap threshold
+
+    // Placement if it's goat turn and still placing
+    if (controller.currentTurn == PieceType.goat && controller.isGoatPlacementPhase) {
+      final placed = controller.placeGoat(nearest);
+      if (placed) _maybeAiTurn();
+      return;
+    }
+    // Otherwise, attempt to move: first tap selects; second tap moves
+    setState(() {
+      _selected ??= null;
+      if (_selected == null) {
+        if (nearest!.type == controller.currentTurn) {
+          _selected = nearest;
+        }
+      } else {
+        final from = _selected!;
+        final ok = controller.move(from, nearest!);
+        _selected = null;
+        if (ok) _maybeAiTurn();
+      }
+    });
+  }
+
+  Point? _selected;
+
+  Future<void> _maybeAiTurn() async {
+    await ai?.maybePlayAiTurnIfNeeded(mode: widget.mode, side: widget.side, difficulty: widget.difficulty);
   }
 }

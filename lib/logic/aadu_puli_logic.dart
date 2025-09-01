@@ -3,7 +3,7 @@ import '../models/board_config.dart';
 
 class AaduPuliLogic {
   static const int maxGoats = 15;
-  static const int requiredCaptures = 6;
+  static const int requiredCaptures = 7;
 
   static final List<List<int>> _lines = [
     [1,2,3,4,5,6],
