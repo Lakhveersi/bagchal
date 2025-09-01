@@ -63,15 +63,19 @@ class _BoardPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final bgPaint = Paint()
-      ..color = const Color(0xFF2A2F3D)
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF2A2F3D), Color(0xFF232836)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(Offset.zero & size)
       ..style = PaintingStyle.fill;
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withOpacity(0.28)
       ..strokeWidth = 2;
     final goatPaint = Paint()..color = const Color(0xFF4ECDC4);
     final tigerPaint = Paint()..color = const Color(0xFFFFD700);
-    final emptyPaint = Paint()..color = Colors.white70;
-    final highlightPaint = Paint()..color = Colors.orangeAccent.withOpacity(0.6);
+    final emptyPaint = Paint()..color = Colors.white60;
+    final highlightPaint = Paint()..color = Colors.orangeAccent.withOpacity(0.35);
 
     // background
     final rect = Offset.zero & size;
@@ -98,10 +102,10 @@ class _BoardPainter extends CustomPainter {
           : p.type == PieceType.tiger
               ? tigerPaint
               : emptyPaint;
-      canvas.drawCircle(center, nodeRadius + (isSelected ? 4 : 0), paint);
       if (isHighlight) {
-        canvas.drawCircle(center, nodeRadius + 8, highlightPaint);
+        canvas.drawCircle(center, nodeRadius + 9, highlightPaint);
       }
+      canvas.drawCircle(center, nodeRadius + (isSelected ? 4 : 0), paint);
     }
   }
 

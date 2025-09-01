@@ -178,12 +178,25 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.boardType == BoardType.square ? 'Square' : 'Ampul'} • ${controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger'} Turn'),
+        title: Text(_appBarTitle()),
+        actions: [
+          IconButton(
+            tooltip: 'Restart',
+            onPressed: () {
+              controller.reset();
+              _clearSelection();
+              WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAiTurn());
+            },
+            icon: const Icon(Icons.refresh),
+          )
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            _buildTurnIndicator(),
+            const SizedBox(height: 8),
             Expanded(
               child: _buildBoard(),
             ),
@@ -195,11 +208,44 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  String _appBarTitle() {
+    final boardName = widget.boardType == BoardType.square ? 'Square' : 'Ampul';
+    final current = controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger';
+    final isPVC = widget.mode == 'PVC';
+    final isPlayerTurn = !isPVC || (widget.side == current);
+    final who = isPlayerTurn ? 'Your Turn' : 'Computer Turn';
+    return '$boardName • $who ($current)';
+  }
+
+  Widget _buildTurnIndicator() {
+    final isPVC = widget.mode == 'PVC';
+    final current = controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger';
+    final isPlayerTurn = !isPVC || (widget.side == current);
+    final color = isPlayerTurn ? Colors.greenAccent : Colors.orangeAccent;
+    final label = isPlayerTurn ? 'Your Turn' : 'Computer Turn';
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          border: Border.all(color: color.withOpacity(0.6)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text('$label • $current', style: TextStyle(color: color)),
+      ),
+    );
+  }
+
   Widget _buildBoard() {
-    if (widget.boardType == BoardType.square) {
+    final bool isSquare = widget.boardType == BoardType.square;
+    final Iterable<Point> points;
+    final List<Connection> connections = <Connection>[];
+    Offset Function(Point) positionOf;
+
+    if (isSquare) {
       final board = controller.squareBoard!;
-      final points = board.expand((e) => e);
-      final connections = <Connection>[];
+      points = board.expand((e) => e);
       final had = <String>{};
       for (final p in points) {
         for (final q in p.adjacentPoints) {
@@ -210,22 +256,31 @@ class _GameScreenState extends State<GameScreen> {
           connections.add(Connection(p, q));
         }
       }
-      Offset pos(Point p) => Offset((p.x) / 4, (p.y) / 4);
-      return BoardView(points: points, connections: connections, positionOf: pos);
+      positionOf = (Point p) => Offset((p.x) / 4, (p.y) / 4);
     } else {
       final config = controller.ampulBoard ?? AmpulBoardFactory.create();
-      Offset pos(Point p) => p.position ?? const Offset(0.5, 0.5);
-      return GestureDetector(
-        onTapUp: (d) {
-          _handleTap(d.localPosition, context.size);
-        },
-        child: BoardView(points: config.nodes, connections: config.connections, positionOf: pos),
-      );
+      points = config.nodes;
+      connections.addAll(config.connections);
+      positionOf = (Point p) => p.position ?? const Offset(0.5, 0.5);
     }
+
+    return BoardView(
+      points: points,
+      connections: connections,
+      positionOf: positionOf,
+      selected: _selected,
+      highlightTargets: _highlightTargets,
+      onTapUp: (local, size) => _handleTap(local, size),
+    );
   }
 
   void _handleTap(Offset local, Size? size) {
     size ??= const Size(1, 1);
+    // Prevent user interaction during AI's turn in PVC mode
+    if (widget.mode == 'PVC') {
+      final currentSide = controller.currentTurn == PieceType.goat ? 'Goat' : 'Tiger';
+      if (widget.side != currentSide) return;
+    }
     // hit test nearest node within radius
     final points = widget.boardType == BoardType.square
         ? controller.squareBoard!.expand((e) => e)
@@ -247,28 +302,66 @@ class _GameScreenState extends State<GameScreen> {
     // Placement if it's goat turn and still placing
     if (controller.currentTurn == PieceType.goat && controller.isGoatPlacementPhase) {
       final placed = controller.placeGoat(nearest);
-      if (placed) _maybeAiTurn();
+      if (placed) {
+        _clearSelection();
+        _maybeHandleGameEndAndAi();
+      }
       return;
     }
     // Otherwise, attempt to move: first tap selects; second tap moves
     setState(() {
-      _selected ??= null;
       if (_selected == null) {
         if (nearest!.type == controller.currentTurn) {
           _selected = nearest;
+          _highlightTargets = controller.validMoves(_selected!).toSet();
+        } else {
+          _clearSelection();
         }
       } else {
         final from = _selected!;
         final ok = controller.move(from, nearest!);
-        _selected = null;
-        if (ok) _maybeAiTurn();
+        _clearSelection();
+        if (ok) {
+          _maybeHandleGameEndAndAi();
+        }
       }
     });
   }
 
   Point? _selected;
+  Set<Point> _highlightTargets = <Point>{};
+
+  void _clearSelection() {
+    _selected = null;
+    _highlightTargets = <Point>{};
+  }
 
   Future<void> _maybeAiTurn() async {
     await ai?.maybePlayAiTurnIfNeeded(mode: widget.mode, side: widget.side, difficulty: widget.difficulty);
+  }
+
+  Future<void> _maybeHandleGameEndAndAi() async {
+    // Show win/lose if reached
+    if (controller.isTigerWin || controller.isGoatWin) {
+      final winner = controller.isTigerWin ? 'Tiger' : 'Goat';
+      if (mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('$winner wins!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text('OK'),
+              )
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    await _maybeAiTurn();
   }
 }
