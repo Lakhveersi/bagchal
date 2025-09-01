@@ -57,77 +57,73 @@ class _MenuScreenState extends State<MenuScreen> {
         body: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 900;
-            final content = <Widget>[
-              Expanded(
-                flex: isWide ? 1 : 0,
-                child: Container(
-                  decoration: AppDecorations.panel,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Mode', style: AppTextStyles.subtitle(context)),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
-                        _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
-                        _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
-                      ]),
-                      const SizedBox(height: 16),
-                      Text('Side', style: AppTextStyles.subtitle(context)),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
-                        _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
-                        _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
-                      ]),
-                      const SizedBox(height: 16),
-                      Text('Difficulty', style: AppTextStyles.subtitle(context)),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
-                        _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
-                        _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
-                        _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
-                      ]),
-                      const SizedBox(height: 16),
-                      Text('Board', style: AppTextStyles.subtitle(context)),
-                      const SizedBox(height: 8),
-                      Wrap(spacing: 8, runSpacing: 8, children: [
-                        _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
-                        _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
-                      ]),
-                      const Spacer(),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.stellarGold,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => GameScreen(
-                                boardType: board,
-                                mode: mode,
-                                side: side,
-                                difficulty: difficulty,
-                              ),
-                            ));
-                          },
-                          child: const Text('Start Game'),
-                        ),
+            final settingsPanel = Container(
+              decoration: AppDecorations.panel,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: isWide ? MainAxisSize.max : MainAxisSize.min,
+                children: [
+                  Text('Mode', style: AppTextStyles.subtitle(context)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    _chip('PVC', mode == 'PVC', () => setState(() => mode = 'PVC')),
+                    _chip('PVP', mode == 'PVP', () => setState(() => mode = 'PVP')),
+                  ]),
+                  const SizedBox(height: 16),
+                  Text('Side', style: AppTextStyles.subtitle(context)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    _chip('Goat', side == 'Goat', () => setState(() => side = 'Goat')),
+                    _chip('Tiger', side == 'Tiger', () => setState(() => side = 'Tiger')),
+                  ]),
+                  const SizedBox(height: 16),
+                  Text('Difficulty', style: AppTextStyles.subtitle(context)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    _chip('Easy', difficulty == Difficulty.easy, () => setState(() => difficulty = Difficulty.easy)),
+                    _chip('Medium', difficulty == Difficulty.medium, () => setState(() => difficulty = Difficulty.medium)),
+                    _chip('Hard', difficulty == Difficulty.hard, () => setState(() => difficulty = Difficulty.hard)),
+                  ]),
+                  const SizedBox(height: 16),
+                  Text('Board', style: AppTextStyles.subtitle(context)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    _chip('Square', board == BoardType.square, () => setState(() => board = BoardType.square)),
+                    _chip('Ampul', board == BoardType.aaduPuli, () => setState(() => board = BoardType.aaduPuli)),
+                  ]),
+                  if (isWide) const Spacer() else const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.stellarGold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                    ],
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => GameScreen(
+                            boardType: board,
+                            mode: mode,
+                            side: side,
+                            difficulty: difficulty,
+                          ),
+                        ));
+                      },
+                      child: const Text('Start Game'),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ];
+            );
 
             return Padding(
               padding: const EdgeInsets.all(16),
               child: isWide
-                  ? Row(children: content)
-                  : SingleChildScrollView(child: Column(children: content)),
+                  ? Row(children: [Expanded(child: settingsPanel)])
+                  : SingleChildScrollView(child: settingsPanel),
             );
           },
         ),
